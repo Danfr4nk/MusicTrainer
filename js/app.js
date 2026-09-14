@@ -209,7 +209,7 @@ function renderWeek(){
           <button class="sbtn ${t.status==="keep"?"on-keep":""}" data-score="keep" data-i="${i}">keep</button>
         </div>
       </div>
-      <div class="player-wrap hidden" data-pw="${i}"><button class="loadplayer" data-load="${i}">▶ load Spotify player</button></div>
+      <div class="player-wrap" data-pw="${i}"><button class="loadplayer" data-load="${i}">▶ load Spotify player</button></div>
     </div>`;
   });
   h += `</div>
