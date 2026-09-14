@@ -19,6 +19,7 @@ function load(){
 function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function week(){ return state.weeks.find(w=>w.id===state.currentWeekId); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtDate(iso){ try{ return new Date(iso).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"}); }catch(e){ return ""; } }
 
 /* ---------- parsing ---------- */
 const ID_RE = /(?:open\.spotify\.com\/track\/|spotify:track:)([A-Za-z0-9]{22})/;
