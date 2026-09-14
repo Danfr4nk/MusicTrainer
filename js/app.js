@@ -170,6 +170,15 @@ function verdictBadge(t){
   return `<span class="verdict ${hit?"hit":"miss"}">${hit?"HIT":"MISS"}</span>`;
 }
 
+function avgScoreLine(w){
+  const avg = a => a.length ? (a.reduce((x,y)=>x+y,0)/a.length) : null;
+  const k = w.tracks.filter(t=>t.status==="keep" && t.score!=null).map(t=>t.score);
+  const r = w.tracks.filter(t=>t.status!=="keep" && t.status!=="unscored" && t.score!=null).map(t=>t.score);
+  const ak = avg(k), ar = avg(r);
+  if(ak==null && ar==null) return "";
+  const f = x => x==null ? "—" : x.toFixed(1);
+  return `<div class="hint">avg my-score — added: <span class="mono" style="color:var(--keep)">${f(ak)}</span> · not added: <span class="mono">${f(ar)}</span></div>`;
+}
 function renderWeek(){
   const w = week();
   if(!w){ renderHome(); show("view-home"); return; }
@@ -182,7 +191,7 @@ function renderWeek(){
         ? `<span class="badge locked">🔒 locked ${esc(w.lockedAt||"")}</span>`
         : `<span class="badge unlocked">predictions unlocked</span>`}
     </div>
-    <div class="sub">${w.tracks.length} tracks · <span class="kbd">j</span>/<span class="kbd">k</span> move · <span class="kbd">1</span> skip · <span class="kbd">2</span> like · <span class="kbd">3</span> keep · <span class="kbd">p</span> player</div>`;
+    <div class="sub">${w.tracks.length} tracks · slider = your score 1–10 · <span class="kbd">j</span>/<span class="kbd">k</span> move · <span class="kbd">1</span> skip · <span class="kbd">2</span> like · <span class="kbd">3</span> added · <span class="kbd">p</span> player</div>`;
 
   h += `<div id="scorebar"><div class="row spread">
       <div class="statgrid" style="margin:0;flex:1;min-width:260px">
@@ -192,21 +201,37 @@ function renderWeek(){
         <div class="stat"><div class="v">${nsc}/${w.tracks.length}</div><div class="l">scored</div></div>
       </div></div>
       <div class="prog"><i style="width:${w.tracks.length?nsc/w.tracks.length*100:0}%"></i></div>
+      ${avgScoreLine(w)}
       ${w.predictionsLocked ? "" : `<div class="btnrow"><button class="btn" id="lockbtn">🔒 Lock predictions</button></div>
         <div class="hint">Locking timestamps the predictions. Score only counts after lock — this preserves the blind test.</div>`}
     </div>`;
 
   h += `<div id="tracklist">`;
   w.tracks.forEach((t,i)=>{
+    const added = t.status==="keep";
     h += `<div class="track ${i===selIdx?"sel":""}" data-i="${i}">
       <div class="head" data-head="${i}">
         <span class="idx">${String(i+1).padStart(2,"0")}</span>
         <div class="meta"><div class="t">${esc(t.name||"untitled")}</div><div class="a">${esc(t.artists||"")}</div></div>
+        ${t.score!=null?`<span class="sval-head">${t.score}/10</span>`:""}
         ${verdictBadge(t)}${predBadge(t)}
-        <div class="scorebtns">
-          <button class="sbtn ${t.status==="skip"?"on-skip":""}" data-score="skip" data-i="${i}">skip</button>
-          <button class="sbtn ${t.status==="like"?"on-like":""}" data-score="like" data-i="${i}">like</button>
-          <button class="sbtn ${t.status==="keep"?"on-keep":""}" data-score="keep" data-i="${i}">keep</button>
+      </div>
+      <div class="controls">
+        <div class="sliderow">
+          <span class="clabel">SCORE</span>
+          <input type="range" min="1" max="10" step="1" value="${t.score??5}" data-slider="${i}" aria-label="my score">
+          <span class="sval" data-sval="${i}">${t.score??"—"}</span>
+        </div>
+        <div class="outcomerow">
+          <div class="scorebtns">
+            <button class="sbtn ${t.status==="skip"?"on-skip":""}" data-score="skip" data-i="${i}">skip</button>
+            <button class="sbtn ${t.status==="like"?"on-like":""}" data-score="like" data-i="${i}">like</button>
+          </div>
+          <div class="addedseg">
+            <span class="clabel">ADDED?</span>
+            <button class="sbtn ${added?"on-keep":""}" data-added-yes="${i}">yes</button>
+            <button class="sbtn ${!added&&t.status!=="unscored"?"on-skip":""}" data-added-no="${i}">no</button>
+          </div>
         </div>
       </div>
       <div class="player-wrap" data-pw="${i}"><button class="loadplayer" data-load="${i}">▶ load Spotify player</button></div>
@@ -222,6 +247,25 @@ function renderWeek(){
 
   $("view-week").querySelectorAll("[data-score]").forEach(b=>{
     b.onclick = e=>{ e.stopPropagation(); setStatus(+b.dataset.i, b.dataset.score, true); };
+  });
+  $("view-week").querySelectorAll("[data-added-yes]").forEach(b=>{
+    b.onclick = e=>{ e.stopPropagation(); setAdded(+b.dataset.addedYes, true); };
+  });
+  $("view-week").querySelectorAll("[data-added-no]").forEach(b=>{
+    b.onclick = e=>{ e.stopPropagation(); setAdded(+b.dataset.addedNo, false); };
+  });
+  $("view-week").querySelectorAll("[data-slider]").forEach(el=>{
+    el.addEventListener("input", ()=>{
+      const w = week(); const t = w.tracks[+el.dataset.slider];
+      t.score = +el.value;
+      const sv = document.querySelector(`[data-sval="${el.dataset.slider}"]`);
+      if(sv) sv.textContent = el.value;
+    });
+    el.addEventListener("change", ()=>{
+      save();
+      selIdx = +el.dataset.slider;
+      renderWeek();
+    });
   });
   $("view-week").querySelectorAll("[data-head]").forEach(el=>{
     el.onclick = ()=>{ selIdx = +el.dataset.head; paintSel(); };
@@ -260,6 +304,13 @@ function loadPlayer(i){
   const w = week(); const t = w.tracks[i];
   const pw = document.querySelector(`[data-pw="${i}"]`);
   pw.innerHTML = `<iframe src="https://open.spotify.com/embed/track/${t.id}?theme=0" allow="encrypted-media" loading="lazy"></iframe>`;
+}
+function setAdded(i, yes){
+  const w = week(); const t = w.tracks[i];
+  if(yes) t.status = "keep";
+  else t.status = (t.status==="like") ? "like" : "skip";
+  save(); renderWeek();
+  selIdx = Math.min(i+1, w.tracks.length-1); paintSel();
 }
 function setStatus(i, status, advance){
   const w = week(); const t = w.tracks[i];
