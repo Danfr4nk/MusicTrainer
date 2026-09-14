@@ -141,7 +141,7 @@ function renderHome(){
       <div class="row spread">
         <div><strong>${esc(w.name)}</strong>
           <span class="badge ${w.type==="discover-weekly"?"dw":"rr"}">${w.type==="discover-weekly"?"DISCOVER WEEKLY":"RELEASE RADAR"}</span>
-          <span class="badge ${w.predictionsLocked?"locked":"unlocked"}">${w.predictionsLocked?"🔒 locked":"unlocked"}</span>
+          <span class="badge ${w.predictionsLocked?"locked":"unlocked"}">${w.predictionsLocked?"🔒 preds locked · scoring open":"unlocked"}</span>
         </div>
         <div class="mono dim">${w.date||""}</div>
       </div>
@@ -202,7 +202,9 @@ function renderWeek(){
       </div></div>
       <div class="prog"><i style="width:${w.tracks.length?nsc/w.tracks.length*100:0}%"></i></div>
       ${avgScoreLine(w)}
-      ${w.predictionsLocked ? "" : `<div class="btnrow"><button class="btn" id="lockbtn">🔒 Lock predictions</button></div>
+      ${w.predictionsLocked
+        ? `<div class="lockbanner">🔒 predictions locked ${fmtDate(w.predictionsLockedAt)} — blind test active · <b>scoring is open</b></div>`
+        : `<div class="btnrow"><button class="btn" id="lockbtn">🔒 Lock predictions</button></div>
         <div class="hint">Locking timestamps the predictions. Score only counts after lock — this preserves the blind test.</div>`}
     </div>`;
 

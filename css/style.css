@@ -57,6 +57,8 @@ h2{font-size:17px;margin-bottom:4px}
 .sbtn.on-like{border-color:var(--like);color:var(--like);background:#2b2210}
 .sbtn.on-keep{border-color:var(--keep);color:var(--keep);background:#10281a}
 .track .verdict{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:6px;flex-shrink:0}
+.lockbanner{background:#0e1f16;border:1px solid #1d3a28;color:var(--keep);padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px}
+.lockbanner b{font-weight:700}
 .verdict.hit{background:#12301f;color:var(--keep)}
 .verdict.miss{background:#2b1518;color:var(--skip)}
 .controls{border-top:1px solid var(--line);padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px}
